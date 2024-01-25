@@ -2,6 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 const files = {
+  /**
+   *
+   * @param {object} tree
+   * @param {string} prefix
+   */
   writeFilesFromTree: (tree, prefix) => {
     Object.keys(tree).forEach((key) => {
       const filePath = path.join(prefix, key);
@@ -16,15 +21,17 @@ const files = {
 
   /**
    *
-   * @param {string} relativePath NOT INCLUDE process.cwd()
+   * @param {string} dir folder or file
    * @returns
    */
-  pathExists: (relativePath) => {
-    return fs.existsSync(path.join(process.cwd(), relativePath));
+  pathExists: (dir) => {
+    return fs.existsSync(path.join(process.cwd(), dir));
   },
 
-  inGitRepo: (gitDir) => {
-    if (fs.existsSync(path.join(process.cwd(), gitDir))) return true;
+  getGitFullPath: (gitDir) => {
+    const gitFullPath = path.join(process.cwd(), gitDir);
+    if (files.pathExists(gitDir)) return gitFullPath;
+    else return false;
   },
 
   /**
