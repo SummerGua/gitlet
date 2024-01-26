@@ -12,7 +12,7 @@ const objects = {
    */
   write: (fileAbsPath) => {
     const hash = utils.getFileHash(fileAbsPath, "blob");
-    const compressedContent = utils.getFileCompress(fileAbsPath, "blob");
+    const compressedContent = utils.getFileCompression(fileAbsPath, "blob");
     const objectFolderPath = path.join(
       files.getGitFullPath(".gitlet"),
       "objects",

@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const index = require(".");
 
 const files = {
   /**
@@ -25,7 +26,9 @@ const files = {
    * @returns
    */
   pathExists: (dir) => {
-    return fs.existsSync(path.join(process.cwd(), dir));
+    if (path.isAbsolute(dir)) {
+      return fs.existsSync(dir);
+    } else return fs.existsSync(path.join(process.cwd(), dir));
   },
 
   getGitFullPath: (gitDir) => {
@@ -55,6 +58,13 @@ const files = {
         );
       }, []);
     }
+  },
+
+  matchingFiles: (relativePath) => {
+    const allIndex = index.read();
+    Object.keys(allIndex).filter((key) => {
+      key.replace("\\", "/");
+    });
   },
 };
 

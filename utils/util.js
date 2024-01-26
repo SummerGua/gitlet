@@ -2,6 +2,7 @@ const path = require("path");
 const zlib = require("zlib");
 const fs = require("fs");
 const crypto = require("crypto");
+const files = require("../src/files");
 
 const utils = {
   /**
@@ -37,10 +38,38 @@ const utils = {
    * @param {"blob" | "tree" | "commit"} type
    * @returns {Buffer}
    */
-  getFileCompress(fileAbsPath, type = "blob") {
+  getFileCompression: (fileAbsPath, type = "blob") => {
     const content = fs.readFileSync(fileAbsPath);
     const str = `${type} ${content.length}\0${content}`;
     return zlib.deflateSync(str);
+  },
+
+  /**
+   *
+   * @param {string} gitDir
+   * @param {string} hash
+   * @param {'type' | 'content' | 'contentSize'} mode
+   * @returns {string}
+   */
+  getFileDecompression: (gitDir, hash, mode) => {
+    const hashFilePath = path.join(
+      process.cwd(),
+      `${gitDir}/objects/${hash.substring(0, 2)}/${hash.substring(
+        hash.length - 38
+      )}`
+    );
+    if (!files.pathExists(hashFilePath)) return "";
+
+    const content = fs.readFileSync(hashFilePath);
+    const deCom = zlib.inflateSync(content).toString();
+    switch (mode) {
+      case "type":
+        return deCom.split(" ")[0];
+      case "content":
+        return deCom.split("\0")[1];
+      case "contentSize":
+        return deCom.split("\0")[0].split(" ")[1];
+    }
   },
 };
 

@@ -1,9 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const files = require("./src/files");
-const objects = require("./src/objects");
+const index = require("./src/index");
 const utils = require("./utils/util");
-const eol = require("os").EOL;
 
 const GIT_DIR = ".gitlet";
 
@@ -13,7 +12,7 @@ const gitlet = {
       console.error(
         "A gitlet version-control system already exists in the current directory."
       );
-      return;
+      return false;
     }
 
     opts = opts || { bare: false };
@@ -36,6 +35,8 @@ const gitlet = {
 
   /**
    * Adds a copy of the file as it currently exists to the *staging area*
+   * only save the up-to-date copy!
+   *
    * @param {string} workPath
    * @returns {void}
    */
@@ -50,7 +51,12 @@ const gitlet = {
       GIT_DIR
     );
     if (addedFileList.length === 0) {
-      console.error("no files modified");
+      // in stage but deleted in work area, remove from stage
+      if (/**find in stage */ 1) {
+        const deletedFileList = files.matchingFiles(workPath);
+        index.updateIndex(deletedFileList, GIT_DIR, { remove: true });
+      }
+      console.error(`${workPath} did not match any files`);
       return;
     }
 
@@ -58,11 +64,22 @@ const gitlet = {
     index.updateIndex(addedFileList, { add: true });
   },
 
+  rm: (workPath) => {
+    // TO-DO
+    console.log(workPath);
+  },
+
+  commit: (message) => {
+    const time = new Date().toLocaleString().replaceAll("/", "-");
+
+    console.log(time);
+  },
+
   /**
    * origin: git hash-object [-t \<type>] \<filename>
    * @param {string} filename
    * @param {"blob" | "tree" | "commit"} type
-   * @returns {void} hashed object
+   * @returns {string} hashed object
    */
   hash_object: (filename, type) => {
     if (!files.pathExists(filename)) {
@@ -74,57 +91,20 @@ const gitlet = {
       return;
     }
     const hash = utils.getFileHash(filename, type);
-    console.log(hash);
+    return hash;
   },
-};
 
-/**
- * `index` file is the index of staging area
- * real files are in .gitlet/objects/
- */
-const index = {
   /**
-   * @param {string[]} fileList an array of files to be added
+   *
+   * @param {string} hash
+   * @param {"type" | "content" | "contentSize"} mode
+   * @returns {string}
    */
-  updateIndex: (fileList, opts) => {
-    // const allIndex = index.read();
-    const allIndex = {};
-    if (opts.add) {
-      fileList.forEach((fileAbsPath) => {
-        // add each file into index & backup file to objects/
-        objects.write(fileAbsPath);
-        allIndex[`${fileAbsPath.split(process.cwd())[1]},0`] =
-          utils.getFileHash(fileAbsPath, "blob");
-      });
-    } else if (opts.remove) {
-      console.log("remove");
-      return;
-    }
-
-    index.write(allIndex);
-  },
-
-  read: () => {
-    const indexPath = path.join(files.getGitFullPath(), "index");
-    if (!files.pathExists(indexPath)) {
-      console.error("No index file found");
-      return;
-    }
-  },
-
-  write: (allIndex) => {
-    const content =
-      Object.keys(allIndex)
-        .map(
-          (key) =>
-            key.split(",")[0] + " " + key.split(",")[1] + " " + allIndex[key]
-        )
-        .join(eol) + eol;
-    fs.writeFileSync(
-      path.join(files.getGitFullPath(GIT_DIR), "index"),
-      content
-    );
+  cat_file: (hash, mode) => {
+    const res = utils.getFileDecompression(GIT_DIR, hash, mode);
+    if (res === "") console.error(`${hash} does not math any files`);
+    return res;
   },
 };
-
-gitlet.add("test/test.js");
+gitlet.commit(1);
+module.exports = gitlet;
