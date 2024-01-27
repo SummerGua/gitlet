@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const index = require(".");
 
 const files = {
   /**
@@ -31,39 +30,48 @@ const files = {
     } else return fs.existsSync(path.join(process.cwd(), dir));
   },
 
-  getGitFullPath: (gitDir) => {
-    const gitFullPath = path.join(process.cwd(), gitDir);
-    if (files.pathExists(gitDir)) return gitFullPath;
+  isDir: (dirPath) => {
+    return fs.statSync(dirPath).isDirectory();
+  },
+
+  getGitFullPath: function (gitDir) {
+    if (files.pathExists(gitDir)) return path.join(process.cwd(), gitDir);
     else return false;
   },
 
   /**
    * get all files under `dirOrFile` exclude `.gitlet`
-   * @param {string} absolutePath
+   * @param {string} absPath
    * @param {string} exclude
    * @returns {Array<string>|[]}
    */
-  recursiveFiles: (absolutePath, exclude) => {
+  findAllFiles: (absPath, exclude) => {
+    if (!path.isAbsolute(absPath)) {
+      absPath = path.join(process.cwd(), absPath);
+    }
     if (
-      !fs.existsSync(absolutePath) ||
-      absolutePath === path.join(process.cwd(), exclude)
+      !fs.existsSync(absPath) ||
+      absPath === path.join(process.cwd(), exclude)
     ) {
       return [];
-    } else if (fs.statSync(absolutePath).isFile()) {
-      return [absolutePath];
-    } else if (fs.statSync(absolutePath).isDirectory()) {
-      return fs.readdirSync(absolutePath).reduce((fileList, dirChild) => {
+    } else if (fs.statSync(absPath).isFile()) {
+      return [absPath];
+    } else if (fs.statSync(absPath).isDirectory()) {
+      return fs.readdirSync(absPath).reduce((fileList, dirChild) => {
         return fileList.concat(
-          files.recursiveFiles(path.join(absolutePath, dirChild), exclude)
+          files.findAllFiles(path.join(absPath, dirChild), exclude)
         );
       }, []);
     }
   },
 
   matchingFiles: (relativePath) => {
-    const allIndex = index.read();
-    Object.keys(allIndex).filter((key) => {
-      key.replace("\\", "/");
+    // todo?
+  },
+
+  removeFiles: (fileList) => {
+    fileList.forEach((path) => {
+      fs.unlinkSync(path);
     });
   },
 };

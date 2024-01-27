@@ -9,7 +9,7 @@ const utils = {
    *
    * @param {string} fileAbsPath
    * @param {"blob" | "tree" | "commit"} type
-   * @returns {string}
+   * @returns {[string, string, string]} [hash[:2], hash[-38:], hash]
    */
   getFileHash: (fileAbsPath, type = "blob") => {
     const content = fs.readFileSync(fileAbsPath);
@@ -25,7 +25,12 @@ const utils = {
       Buffer.from("\0"),
       Buffer.from(content),
     ]);
-    return crypto.createHash("sha1").update(hashBuffer).digest("hex");
+
+    const hashSHA1 = crypto.createHash("sha1").update(hashBuffer).digest("hex");
+    const dirName = hashSHA1.substring(0, 2);
+    const fileName = hashSHA1.substring(hashSHA1.length - 38);
+
+    return [dirName, fileName, hashSHA1];
   },
 
   /**

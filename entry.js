@@ -1,15 +1,15 @@
-const fs = require("fs");
-const path = require("path");
 const files = require("./src/files");
 const index = require("./src/index");
+const objects = require("./src/objects");
+const refs = require("./src/refs");
 const utils = require("./utils/util");
 
-const GIT_DIR = ".gitlet";
-
 const gitlet = {
+  GIT_DIR: ".gitlet",
+
   init: (opts) => {
-    if (files.getGitFullPath(GIT_DIR)) {
-      console.error(
+    if (files.getGitFullPath(gitlet.GIT_DIR)) {
+      console.log(
         "A gitlet version-control system already exists in the current directory."
       );
       return false;
@@ -28,7 +28,7 @@ const gitlet = {
 
     // if bare, don't create gitlet/
     files.writeFilesFromTree(
-      opts.bare ? gitletStruct : { [GIT_DIR]: gitletStruct },
+      opts.bare ? gitletStruct : { [gitlet.GIT_DIR]: gitletStruct },
       process.cwd()
     );
   },
@@ -41,56 +41,79 @@ const gitlet = {
    * @returns {void}
    */
   add: (workPath) => {
-    if (!files.getGitFullPath(GIT_DIR)) {
-      console.error("Not in a git repository.");
+    if (!files.getGitFullPath(gitlet.GIT_DIR)) {
+      console.log("Not in a git repository.");
       return;
     }
 
-    const addedFileList = files.recursiveFiles(
-      path.join(process.cwd(), workPath),
-      GIT_DIR
-    );
-    if (addedFileList.length === 0) {
-      // in stage but deleted in work area, remove from stage
-      if (/**find in stage */ 1) {
-        const deletedFileList = files.matchingFiles(workPath);
-        index.updateIndex(deletedFileList, GIT_DIR, { remove: true });
-      }
-      console.error(`${workPath} did not match any files`);
+    const filesToAdd = files.findAllFiles(workPath, gitlet.GIT_DIR);
+    if (filesToAdd.length === 0) {
+      // TO-DO
+      // in index but not in work area, remove from index
+      // const ind = index.read()
+      // if(ind[]!==undefined){
+
+      // }
+      // else{
+
+      //   console.log(`${workPath} did not match any files`);
+      //   return;
+      // }
+      console.log(`${workPath} did not match any files`);
       return;
     }
 
     // add to index and objects
-    index.updateIndex(addedFileList, { add: true });
+    index.updateIndex(filesToAdd, gitlet.GIT_DIR, { add: true });
   },
 
   rm: (workPath) => {
-    // TO-DO
-    console.log(workPath);
+    if (!files.getGitFullPath(gitlet.GIT_DIR)) {
+      console.log("Not in a git repository.");
+      return;
+    }
+
+    const filesToRemove = files.findAllFiles(workPath, gitlet.GIT_DIR);
+    if (filesToRemove.length === 0) {
+      console.log(`${workPath} did not match any files`);
+      return;
+    }
+
+    index.updateIndex(filesToRemove, gitlet.GIT_DIR, { remove: true });
+    files.removeFiles(filesToRemove);
   },
 
   commit: (message) => {
-    const time = new Date().toLocaleString().replaceAll("/", "-");
+    const treeHash = objects.write(`./${gitlet.GIT_DIR}/index`, "tree");
+    // todo把tree object和时间、message作为commit的内容
+    const commitHash = objects.write(
+      `./${gitlet.GIT_DIR}/objects/${treeHash}`,
+      "commit"
+    );
+  },
 
-    console.log(time);
+  branch: (branchName) => {
+    refs.updateRef(branchName);
   },
 
   /**
    * origin: git hash-object [-t \<type>] \<filename>
+   * NOTE: ONLY FILE can be passed, a dir can not
    * @param {string} filename
    * @param {"blob" | "tree" | "commit"} type
    * @returns {string} hashed object
    */
   hash_object: (filename, type) => {
     if (!files.pathExists(filename)) {
-      console.error("No such file or directory");
+      console.log("No such file or directory");
       return;
     }
-    if (fs.statSync(filename).isDirectory()) {
-      console.error("Please pass a file instead of a directory");
+    if (files.isDir(filename)) {
+      console.log("Please pass a file instead of a directory");
       return;
     }
-    const hash = utils.getFileHash(filename, type);
+    const [_, __, hash] = utils.getFileHash(filename, type);
+    console.log(hash);
     return hash;
   },
 
@@ -101,10 +124,11 @@ const gitlet = {
    * @returns {string}
    */
   cat_file: (hash, mode) => {
-    const res = utils.getFileDecompression(GIT_DIR, hash, mode);
-    if (res === "") console.error(`${hash} does not math any files`);
+    const res = utils.getFileDecompression(gitlet.GIT_DIR, hash, mode);
+    if (res === "") console.log(`${hash} does not math any files`);
+    console.log(res);
     return res;
   },
 };
-gitlet.commit(1);
+
 module.exports = gitlet;

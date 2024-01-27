@@ -2,8 +2,8 @@ const path = require("path");
 const fs = require("fs");
 const EOL = require("os").EOL;
 const objects = require("./objects");
-const utils = require("../utils/util");
 const files = require("./files");
+const utils = require("../utils/util");
 
 /**
  * `index` file is the index of staging area
@@ -22,24 +22,31 @@ const index = {
     if (opts.add) {
       fileList.forEach((addedFileAbsPath) => {
         // add each file into index & backup file to objects/
-        objects.write(addedFileAbsPath);
-        allIndex[`${addedFileAbsPath.split(process.cwd())[1]},0`] =
-          utils.getFileHash(addedFileAbsPath, "blob");
+        objects.write(addedFileAbsPath, "blob");
+        allIndex[
+          `.${addedFileAbsPath.split(process.cwd())[1].replaceAll("\\", "/")}`
+        ] = utils.getFileHash(addedFileAbsPath, "blob")[2];
       });
     } else if (opts.remove) {
       fileList.forEach((deletedFileAbsPath) => {
-        delete allIndex[`${deletedFileAbsPath.split(process.cwd())[1]},0`];
+        delete allIndex[
+          `.${deletedFileAbsPath.split(process.cwd())[1].replaceAll("\\", "/")}`
+        ];
       });
     }
 
     index.write(allIndex, GIT_DIR);
   },
 
-  read: (GIT_DIR) => {
-    const indexPath = path.join(files.getGitFullPath(GIT_DIR), "index");
+  /**
+   *
+   * @param {string} gitDir
+   * @returns {object}
+   */
+  read: (gitDir) => {
+    const indexPath = path.join(files.getGitFullPath(gitDir), "index");
     if (!files.pathExists(indexPath)) {
-      console.error("No index file found");
-      return;
+      return {};
     }
 
     const content = fs.readFileSync(indexPath, "utf-8");
@@ -47,24 +54,21 @@ const index = {
     // remove '' or '  '
     lines = lines.filter((item) => !/^\s*$/.test(item));
 
-    // {filePath_0,0: hash_0,..., filePath_N,0: hash_N}
+    // {filePath_0: hash_0,..., filePath_N: hash_N}
     const allIndex = lines.reduce((pre, cur) => {
-      const [file, stage, hash] = cur.split(" ");
+      const [file, hash] = cur.split(" ");
       return Object.assign(pre, {
-        [`${file},${stage}`]: hash,
+        [file]: hash,
       });
     }, {});
     return allIndex;
   },
 
   write: (allIndex, GIT_DIR) => {
-    // format: <relative path> 0 <hash>
+    // format: <relative path> <hash>
     const content =
       Object.keys(allIndex)
-        .map(
-          (key) =>
-            key.split(",")[0] + " " + key.split(",")[1] + " " + allIndex[key]
-        )
+        .map((key) => key + " " + allIndex[key])
         .join(EOL) + EOL;
     fs.writeFileSync(
       path.join(files.getGitFullPath(GIT_DIR), "index"),
