@@ -1,8 +1,8 @@
-const files = require("./src/files");
-const index = require("./src/index");
-const objects = require("./src/objects");
-const refs = require("./src/refs");
-const utils = require("./utils/util");
+const files = require("./files");
+const index = require("./index");
+const objects = require("./objects");
+const refs = require("./refs");
+const utils = require("../utils/util");
 
 const gitlet = {
   GIT_DIR: ".gitlet",
@@ -41,6 +41,10 @@ const gitlet = {
    * @returns {void}
    */
   add: (workPath) => {
+    if (!workPath) {
+      console.log("please input a path");
+      return;
+    }
     if (!files.getGitFullPath(gitlet.GIT_DIR)) {
       console.log("Not in a git repository.");
       return;
@@ -48,23 +52,23 @@ const gitlet = {
 
     const filesToAdd = files.findAllFiles(workPath, gitlet.GIT_DIR);
     if (filesToAdd.length === 0) {
-      // TO-DO
-      // in index but not in work area, remove from index
-      // const ind = index.read()
-      // if(ind[]!==undefined){
-
-      // }
-      // else{
-
-      //   console.log(`${workPath} did not match any files`);
-      //   return;
-      // }
-      console.log(`${workPath} did not match any files`);
-      return;
+      // not in work area
+      const ind = Object.keys(index.read(gitlet.GIT_DIR)).map((item) =>
+        utils.relToAbs(item)
+      );
+      const absPath = utils.relToAbs(workPath);
+      if (ind.includes(absPath)) {
+        // in index
+        console.log(`${workPath} removed from staging area`);
+        index.updateIndex([absPath], gitlet.GIT_DIR, { remove: true });
+      } else {
+        // neither in index nor in work area
+        console.log(`${workPath} did not match any files`);
+      }
+    } else {
+      // add to index and objects
+      index.updateIndex(filesToAdd, gitlet.GIT_DIR, { add: true });
     }
-
-    // add to index and objects
-    index.updateIndex(filesToAdd, gitlet.GIT_DIR, { add: true });
   },
 
   rm: (workPath) => {
@@ -84,16 +88,50 @@ const gitlet = {
   },
 
   commit: (message) => {
-    const treeHash = objects.write(`./${gitlet.GIT_DIR}/index`, "tree");
-    // todo把tree object和时间、message作为commit的内容
-    const commitHash = objects.write(
-      `./${gitlet.GIT_DIR}/objects/${treeHash}`,
-      "commit"
-    );
+    if (!files.getGitFullPath(gitlet.GIT_DIR)) {
+      console.log("Not in a git repository.");
+      return;
+    }
+
+    if (!message) {
+      console.log("Please enter a commit message");
+      return;
+    }
+
+    const treeHash = gitlet.write_tree();
+    const parentHash = refs.getParentHash();
+
+    if (parentHash !== "") {
+      const lastTreeHash = JSON.parse(
+        gitlet.cat_file(parentHash, "content", false)
+      ).tree;
+      if (treeHash === lastTreeHash) {
+        console.log("no changes added to commit");
+        return;
+      }
+    }
+
+    const commitHash = objects.createCommit(treeHash, parentHash, message);
+    // 把commit hash存到refs/heads/当前分支名
+    console.log(commitHash);
+    refs.updateRef(commitHash);
+  },
+
+  switch: (branchName) => {
+    if (!branchName) {
+      console.log("please pass a branch name");
+      return;
+    }
+    refs.changeBranch(branchName);
   },
 
   branch: (branchName) => {
-    refs.updateRef(branchName);
+    if (branchName === undefined) {
+      const branch = refs.getCurrentBranch();
+      console.log(branch);
+      return branch;
+    }
+    refs.addBranch(branchName);
   },
 
   /**
@@ -123,11 +161,26 @@ const gitlet = {
    * @param {"type" | "content" | "contentSize"} mode
    * @returns {string}
    */
-  cat_file: (hash, mode) => {
+  cat_file: (hash, mode, log = true) => {
+    if (!hash || !mode) {
+      console.log("please pass params");
+      return;
+    }
     const res = utils.getFileDecompression(gitlet.GIT_DIR, hash, mode);
     if (res === "") console.log(`${hash} does not math any files`);
-    console.log(res);
+    if (log) console.log(res);
     return res;
+  },
+
+  /**
+   * create a tree object of current index
+   * @returns {string}
+   */
+  write_tree: () => {
+    const ind = index.read(gitlet.GIT_DIR);
+    const tree = files.nestFlatTree(ind);
+    const treeHash = objects.writeTree(tree);
+    return treeHash;
   },
 };
 

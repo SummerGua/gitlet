@@ -3,13 +3,25 @@
 ## TODO
 
 - add:
-  1. 如果`gitlet.add(文件)`，文件存在则 addIndex，不存在则从 index 中删除；
-  2. 如果`gitlet.add(文件夹)`：找到文件夹下所有文件，遍历文件，重复 1
+  1. √ 如果`gitlet.add(文件)`，文件存在则 addIndex，不存在则从 index 中删除；
+  2. √ 如果`gitlet.add(文件夹)`：找到文件夹下所有文件，遍历文件，重复 1
 - branch(branch_name?:string):
-  - 不含参数：查看分支
+  - √ 不含参数：查看所有分支和当前分支
   - 传参：创建分支（在 refs/heads/下新建一个文件），如果已经有，则提示：a branch named `<branch_name>` already exists
+- commit 发生了什么：
+  - 创建一个 commit object，包含：index 内容，parent 指向上一次 commit 的 40hash，日期、消息
+  - **注意**：index 内容在 commit 之后不会清空，git 如何判断当前没有需要提交的呢？对比工作区和 index 中的内容
 
 ## LOG
+
+2/5
+
+- 差不多完成了 gitlet.write_tree()
+- 难点：把`'./src/test.js'转为树`
+
+2/3
+
+- 补完了 `add` 的从 index 中移除**文件**的功能，但是移除整个文件夹没有做
 
 1/27
 
@@ -30,3 +42,11 @@
 
 - init 初始化目录
 - add 做了一半
+
+## REFERENCE
+
+- https://ndpsoftware.com/git-cheatsheet.html#loc=index;
+- https://marklodato.github.io/visual-git-guide/index-zh-cn.html
+- http://gitlet.maryrosecook.com/docs/gitlet.html
+- https://cs61bl.org/su17/materials/proj/proj2/proj2.html#f-the-commands
+- https://www.leshenko.net/p/ugit/#status-show-staged

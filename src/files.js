@@ -27,15 +27,15 @@ const files = {
   pathExists: (dir) => {
     if (path.isAbsolute(dir)) {
       return fs.existsSync(dir);
-    } else return fs.existsSync(path.join(process.cwd(), dir));
+    } else return fs.existsSync(path.resolve(dir));
   },
 
   isDir: (dirPath) => {
     return fs.statSync(dirPath).isDirectory();
   },
 
-  getGitFullPath: function (gitDir) {
-    if (files.pathExists(gitDir)) return path.join(process.cwd(), gitDir);
+  getGitFullPath: (gitDir) => {
+    if (files.pathExists(gitDir)) return path.resolve(gitDir);
     else return false;
   },
 
@@ -65,8 +65,43 @@ const files = {
     }
   },
 
-  matchingFiles: (relativePath) => {
-    // todo?
+  /**
+   *
+   * @param {Object} flatObject
+   */
+  nestFlatTree: (obj) => {
+    /* key 1) can be a file without ext './test'
+             2) can be a file with ext './README.md'
+             3) can be a deep path './src/util/util.js'
+      */
+    const tree = {};
+
+    for (const key in obj) {
+      // get an array consists of folders
+      // be like: ['src', 'util', 'util.js']
+      const item = key.replace("./", "");
+      const pathParts = item.split("/");
+      let currentLevel = tree;
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        // get current path part
+        const part = pathParts[i];
+
+        // if not exist in current level, create it
+        // such as folder 'src'
+        if (!currentLevel[part]) {
+          currentLevel[part] = {};
+        }
+
+        // into the next level
+        currentLevel = currentLevel[part];
+      }
+
+      // last part is file name
+      const lastPart = pathParts[pathParts.length - 1];
+      currentLevel[lastPart] = obj[key];
+    }
+
+    return tree;
   },
 
   removeFiles: (fileList) => {

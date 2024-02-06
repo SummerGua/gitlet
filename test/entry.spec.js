@@ -5,22 +5,31 @@ const gitlet = require("../entry");
 const index = require("../src");
 
 describe("gitlet command test", () => {
-  const TEST_FILE = "README.md";
-  const TEST_DIR = "testDir";
+  const TEST_FILE = "a.txt";
+  const TEST_DIR = "b";
+  const ROOT = process.cwd();
 
   beforeAll(() => {
     process.chdir(path.join(process.cwd(), "./test/testData"));
-    console.log(process.cwd());
-    if (fs.existsSync(".gitlet")) {
-      fs.rmSync(".gitlet", { recursive: true, force: true });
+    if (fs.existsSync(gitlet.GIT_DIR)) {
+      fs.rmSync(gitlet.GIT_DIR, { recursive: true, force: true });
+    }
+    if (fs.existsSync(TEST_DIR)) {
+      fs.rmSync(TEST_DIR, { recursive: true, force: true });
     }
     // create test file
-    fs.writeFileSync(TEST_FILE, "");
+    fs.writeFileSync(TEST_FILE, "1");
+    fs.mkdirSync(TEST_DIR);
+    fs.writeFileSync(path.join(TEST_DIR, "c.txt"), "1");
   });
 
-  test("gitlet.init() should create all files", () => {
+  afterAll(() => {
+    process.chdir(ROOT);
+  });
+
+  test("init() should create all files", () => {
     gitlet.init();
-    const gitletPath = path.join(process.cwd(), ".gitlet");
+    const gitletPath = path.join(process.cwd(), gitlet.GIT_DIR);
     expect(fs.existsSync(gitletPath)).toBe(true);
     expect(fs.existsSync(path.join(gitletPath, "objects"))).toBe(true);
     expect(fs.existsSync(path.join(gitletPath, "refs/heads"))).toBe(true);
@@ -32,11 +41,11 @@ describe("gitlet command test", () => {
     );
   });
 
-  test("gitlet.init() should not be created twice", () => {
+  test("init() should not be created twice", () => {
     const hasCreated = gitlet.init();
     expect(hasCreated).toBe(false);
 
-    const gitletPath = path.join(process.cwd(), ".gitlet");
+    const gitletPath = path.join(process.cwd(), gitlet.GIT_DIR);
     expect(fs.existsSync(gitletPath)).toBe(true);
     expect(fs.existsSync(path.join(gitletPath, "objects"))).toBe(true);
     expect(fs.existsSync(path.join(gitletPath, "refs/heads"))).toBe(true);
@@ -48,7 +57,7 @@ describe("gitlet command test", () => {
     );
   });
 
-  test("gitlet.hash_object() should return a file's hash", () => {
+  test("hash_object() should return a file's hash", () => {
     const blobHash = gitlet.hash_object(TEST_FILE, "blob");
     const content = fs.readFileSync(TEST_FILE);
     const hashBuffer = Buffer.concat([
@@ -63,26 +72,28 @@ describe("gitlet command test", () => {
     expect(blobHash).toBe(hash);
   });
 
-  test("gitlet.hash_object() can not receive a directory name", () => {
+  test("hash_object() can not receive a directory name", () => {
     const res = gitlet.hash_object(TEST_DIR);
     expect(res).toBe(undefined);
   });
 
-  test("gitlet.add(file or dir) should add backup to object & add to index", () => {
+  test.skip("add(file or dir) should add backup to object & add to index", () => {
     // TODO TOO COMPLEX
     gitlet.add(TEST_FILE);
-    expect(1).toBe(1);
+    const allIndex = index.read(gitlet.GIT_DIR);
   });
 
-  test("gitlet.rm(filePath) should remove path both from index and working directory", () => {
+  test("rm() should remove sth. both from index and working directory", () => {
     gitlet.rm(TEST_FILE);
     const isExisting = fs.existsSync(TEST_FILE);
     expect(isExisting).toBe(false);
-    const indexContent = index.read(".gitlet");
+    const indexContent = index.read(gitlet.GIT_DIR);
     if (TEST_FILE.indexOf("./")) {
       expect(indexContent[TEST_FILE]).toBe(undefined);
     } else {
       expect(indexContent[`./${TEST_FILE}`]).toBe(undefined);
     }
+    fs.writeFileSync(TEST_FILE, "1");
+    gitlet.add(".");
   });
 });
