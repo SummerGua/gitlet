@@ -41,12 +41,12 @@ const gitlet = {
    * @returns {void}
    */
   add: (workPath) => {
-    if (!workPath) {
-      console.log("please input a path");
-      return;
-    }
     if (!files.getGitFullPath(gitlet.GIT_DIR)) {
       console.log("Not in a git repository.");
+      return;
+    }
+    if (!workPath) {
+      console.log("please input a path");
       return;
     }
 
