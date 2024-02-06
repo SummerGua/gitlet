@@ -1,5 +1,12 @@
 ![](https://img-blog.csdnimg.cn/e89f3778708e4e86ae32788ae3fad029.png)
 
+## Usage
+
+1. `git clone https://github.com/SummerGua/gitlet.git`
+2. `cd gitlet`
+3. `npm link`
+4. try commands from `gitlet init`
+
 ## TODO
 
 - add:
@@ -7,16 +14,21 @@
   2. √ 如果`gitlet.add(文件夹)`：找到文件夹下所有文件，遍历文件，重复 1
 - branch(branch_name?:string):
   - √ 不含参数：查看所有分支和当前分支
-  - 传参：创建分支（在 refs/heads/下新建一个文件），如果已经有，则提示：a branch named `<branch_name>` already exists
+  - √ 传参：创建分支（在 refs/heads/下新建一个文件），如果已经有，则提示：a branch named `<branch_name>` already exists
 - commit 发生了什么：
-  - 创建一个 commit object，包含：index 内容，parent 指向上一次 commit 的 40hash，日期、消息
-  - **注意**：index 内容在 commit 之后不会清空，git 如何判断当前没有需要提交的呢？对比工作区和 index 中的内容
+  - √ 创建一个 commit object，包含：index 内容，parent 指向上一次 commit 的 40hash，日期、消息
+  - √ **注意**：index 内容在 commit 之后不会清空，git 如何判断当前没有需要提交的呢？对比工作区和 index 中的内容
 
 ## LOG
 
+2/6
+
+- 分支相关基本完成
+- 支持命令行
+
 2/5
 
-- 差不多完成了 gitlet.write_tree()
+- 差不多完成了 `gitlet.write_tree()`
 - 难点：把`'./src/test.js'转为树`
 
 2/3
