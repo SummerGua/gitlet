@@ -1,6 +1,6 @@
 ![](https://img-blog.csdnimg.cn/e89f3778708e4e86ae32788ae3fad029.png)
 
-## Usage
+## USAGE
 
 1. `git clone https://github.com/SummerGua/gitlet.git`
 2. `cd gitlet`
