@@ -223,5 +223,5 @@ const gitlet = {
     return treeHash;
   },
 };
-gitlet.log();
+
 module.exports = gitlet;

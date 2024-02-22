@@ -73,6 +73,9 @@ const refs = {
       currentHead.split("ref: ")[1]
     );
     const fileHash = fs.readFileSync(currentHeadPath, "utf-8");
+    if (!fileHash) {
+      return "";
+    }
     const content = utils.getFileDecompression(fileHash)["content"];
     return JSON.parse(content);
   },
