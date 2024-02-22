@@ -21,7 +21,9 @@ const gitlet = {
       HEAD: "ref: refs/heads/master",
       objects: {},
       refs: {
-        heads: {},
+        heads: {
+          master: "",
+        },
       },
       config: JSON.stringify({ core: { bare: false } }, null, 2),
     };
@@ -118,6 +120,10 @@ const gitlet = {
   },
 
   switch: (branchName) => {
+    if (!files.getGitFullPath(gitlet.GIT_DIR)) {
+      console.log("Not in a git repository.");
+      return;
+    }
     if (!branchName) {
       console.log("please pass a branch name");
       return;
@@ -126,22 +132,56 @@ const gitlet = {
   },
 
   branch: (branchName) => {
-    if (branchName === undefined) {
-      const branch = refs.getCurrentBranch();
-      console.log(branch);
-      return branch;
+    if (!files.getGitFullPath(gitlet.GIT_DIR)) {
+      console.log("Not in a git repository.");
+      return;
     }
-    refs.addBranch(branchName);
+    const branches = refs.getAllBranches();
+    if (!branchName) {
+      console.log(branches.join("\n"));
+      return branches;
+    } else if (branches.includes(branchName)) {
+      console.log(`a branch named '${branchName}' already exists`);
+      return;
+    } else refs.addBranch(branchName);
+  },
+
+  log: () => {
+    if (!files.getGitFullPath(gitlet.GIT_DIR)) {
+      console.log("Not in a git repository.");
+      return;
+    }
+    // list every commit
+    const commitLogs = [];
+    let lastCommit = refs.getLastCommitContent();
+    if (!lastCommit) {
+      console.log("No commits yet");
+      return;
+    }
+    commitLogs.push(lastCommit);
+    while (lastCommit.parent) {
+      const commit = JSON.parse(
+        gitlet.cat_file(lastCommit.parent, "content", false)
+      );
+      commitLogs.push(commit);
+      lastCommit = commit;
+    }
+    commitLogs.forEach((commit) => {
+      console.log(`
+        parent:\t ${commit.parent ? commit.parent : "the first commit"}
+        date:\t ${commit.date}
+        message: ${commit.message}
+        `);
+    });
   },
 
   /**
-   * origin: git hash-object [-t \<type>] \<filename>
+   * prototype: git hash-object [-t \<type>] \<filename>
    * NOTE: ONLY FILE can be passed, a dir can not
    * @param {string} filename
-   * @param {"blob" | "tree" | "commit"} type
    * @returns {string} hashed object
    */
-  hash_object: (filename, type) => {
+  hash_object: (filename) => {
     if (!files.pathExists(filename)) {
       console.log("No such file or directory");
       return;
@@ -150,7 +190,7 @@ const gitlet = {
       console.log("Please pass a file instead of a directory");
       return;
     }
-    const [_, __, hash] = utils.getFileHash(filename, type);
+    const [_, __, hash] = utils.getFileHash(filename);
     console.log(hash);
     return hash;
   },
@@ -166,7 +206,7 @@ const gitlet = {
       console.log("please pass params");
       return;
     }
-    const res = utils.getFileDecompression(gitlet.GIT_DIR, hash, mode);
+    const res = utils.getFileDecompression(hash)[mode];
     if (res === "") console.log(`${hash} does not math any files`);
     if (log) console.log(res);
     return res;
@@ -183,5 +223,5 @@ const gitlet = {
     return treeHash;
   },
 };
-
+gitlet.log();
 module.exports = gitlet;

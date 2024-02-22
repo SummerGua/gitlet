@@ -60,11 +60,15 @@ const utils = {
   /**
    *
    * @param {string} gitDir
-   * @param {string} hash
-   * @param {'type' | 'content' | 'contentSize'} mode
-   * @returns {string}
+   * @param {string} hash 40 bit hash
+   * @returns {deCompressionContent}
+   * @typedef {Object} deCompressionContent
+   * @property {string} type
+   * @property {string} content
+   * @property {string} contentSize
    */
-  getFileDecompression: (gitDir, hash, mode) => {
+  getFileDecompression: (hash, gitDir) => {
+    gitDir = gitDir || ".gitlet";
     const hashFilePath = path.join(
       process.cwd(),
       `${gitDir}/objects/${hash.substring(0, 2)}/${hash.substring(
@@ -74,15 +78,13 @@ const utils = {
     if (!files.pathExists(hashFilePath)) return "";
 
     const content = fs.readFileSync(hashFilePath);
-    const deCom = zlib.inflateSync(content).toString();
-    switch (mode) {
-      case "type":
-        return deCom.split(" ")[0];
-      case "content":
-        return deCom.split("\0")[1];
-      case "contentSize":
-        return deCom.split("\0")[0].split(" ")[1];
-    }
+    const deCompression = zlib.inflateSync(content).toString();
+
+    return {
+      type: deCompression.split(" ")[0],
+      content: deCompression.split("\0")[1],
+      contentSize: deCompression.split("\0")[0].split(" ")[1],
+    };
   },
 
   /**

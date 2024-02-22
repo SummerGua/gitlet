@@ -35,6 +35,7 @@ const files = {
   },
 
   getGitFullPath: (gitDir) => {
+    gitDir = gitDir || ".gitlet";
     if (files.pathExists(gitDir)) return path.resolve(gitDir);
     else return false;
   },

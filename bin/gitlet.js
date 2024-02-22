@@ -1,21 +1,72 @@
 #!/usr/bin/env node
+const { program } = require("commander");
 const gitlet = require("../src/entry");
 
-const args = process.argv.slice(2);
-const command = args[0];
+program
+  .command("init")
+  .description("init a gitlet directory")
+  .action(() => {
+    gitlet.init();
+  });
 
-if (args.length === 2) {
-  gitlet[command](args[1]);
-} else if (args.length === 3) {
-  gitlet[command](args[1], args[2]);
-} else {
-  if (args[0] === "-h" || args[0] === "--help") {
-    console.log(
-      "supported command:\n\
-      init\n\
-      add <filename | folder> \t rm <filename>(use it carefully!!!)\n\
-      commit <message> \t\t branch [newBranchName]\n\
-      switch <branchName> \t cat_file <40BitHash> <content|contentSize|type>"
-    );
-  } else gitlet[command]();
-}
+program
+  .command("add")
+  .description("add a file or folder to the index")
+  .argument("<f>", "<filename | folder>")
+  .action((f) => {
+    gitlet.add(f);
+  });
+
+program
+  .command("rm")
+  .description(
+    "remove a file from the index and the working directory,\
+    use it carefully"
+  )
+  .argument("<f>", "filename")
+  .action((f) => {
+    gitlet.rm(f);
+  });
+
+program
+  .command("commit")
+  .description("commit the current index")
+  .option("-m, --message <m>", "commit message")
+  .action((options) => {
+    gitlet.commit(options.message);
+  });
+
+program
+  .command("switch")
+  .description("switch to another branch")
+  .argument("<b>", "branch name")
+  .action((b) => {
+    gitlet.switch(b);
+  });
+
+program
+  .command("branch")
+  .description("create a new branch or list all branches")
+  .argument("[b]", "new branch name")
+  .action((b) => {
+    gitlet.branch(b);
+  });
+
+program
+  .command("hash-object")
+  .description("create a hash object of a file")
+  .argument("<f>", "file path")
+  .action((f) => {
+    gitlet.hash_object(f);
+  });
+
+program
+  .command("cat-file")
+  .description("view a file by via 40 bit hash")
+  .argument("<h>", "40 bit hash")
+  .argument("<mode>", "<type|content|contentSize>")
+  .action((h, mode) => {
+    gitlet.cat_file(h, mode);
+  });
+
+program.parse();
