@@ -5,7 +5,7 @@
 1. `git clone https://github.com/SummerGua/gitlet.git`
 2. `cd gitlet`
 3. `npm link`
-4. try commands from `gitlet init`
+4. try commands from `gitlet -h`
 
 ## TODO
 
@@ -20,6 +20,11 @@
   - √ **注意**：index 内容在 commit 之后不会清空，git 如何判断当前没有需要提交的呢？对比工作区和 index 中的内容
 
 ## LOG
+
+2/22
+
+- 支持`gitlet log`
+- 使用`commandar`
 
 2/6
 
