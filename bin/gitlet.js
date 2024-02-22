@@ -69,4 +69,11 @@ program
     gitlet.cat_file(h, mode);
   });
 
+program
+  .command("log")
+  .description("show commit logs")
+  .action(() => {
+    gitlet.log();
+  });
+
 program.parse();
